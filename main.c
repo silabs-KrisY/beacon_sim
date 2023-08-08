@@ -9,6 +9,11 @@
 #define BEACON_RAND_TIME_MOD (11 * TIME_COEFF) //give us a random number from 0-10ms
 #define SUCCESS_LIMIT 100.0f
 #define TIME_BETWEEN_ADV 100 // 100 us
+
+#define SCAN_WINDOW_MS 50
+#define SCAN_INTERVAL_MS 50
+#define BEACON_INTERVAL_MS 1200
+
 //#define PRINT_DEBUG //define for debug prints
 //#define PRINT_STATUS //define for status output
 //#define PRINT_HITS //print hits
@@ -43,30 +48,31 @@ void init_beacons(beacon* b, int num_beacons, int beacon_send_interval, int beac
 
 int main(int argc, char *argv[])
 {
-	int scan_window = 10;	//ms
-	int scan_interval = 1000; //ms
-	int beacon_tx_interval = 500; //ms
+	int scan_window = SCAN_WINDOW_MS;	//ms
+	int scan_interval = SCAN_INTERVAL_MS; //ms
+	int beacon_tx_interval = BEACON_INTERVAL_MS; //ms
 	int NUM_BEACONS = 1;
 	int BEACON_SCAN_TIME = TIME_COEFF*scan_window; /* result in us */
 	int BEACON_SEND_INTERVAL = TIME_COEFF*beacon_tx_interval; /* result in us */
 	int BEACON_SCAN_INTERVAL = TIME_COEFF*scan_interval; /* result in us */
-	int NUM_RUN = 100;
+	int NUM_RUN = 1000;
 	int BEACON_LENGTH = 368; //us
 	beacon beacons[NUM_BEACONS];
 	FILE *fp;
 
 	fp = fopen("data.csv","a");
-	fprintf(fp,"Num Beacons,Scan Window ms,Scan Interval ms,Beacon Tx Interval ms,Avg s,Max s,Min s\n");
+	fprintf(fp,"Num Beacons,Scan Window ms,Scan Interval ms,Beacon Tx Interval ms,found time ms,num run\n");
 	fflush(fp);
 
 	srand(time(NULL));
 
-  for (scan_window=25;scan_window>0;scan_window--)
-	{
+  // optional outer iteration here
+  //for (scan_window=25;scan_window>0;scan_window--)
+	//{
 		float sum_time = 0.0f;
 		float max_time = 0.0f;
 		float min_time = FLT_MAX;
-		BEACON_SCAN_TIME = TIME_COEFF*scan_window; /* result in us */
+		//BEACON_SCAN_TIME = TIME_COEFF*scan_window; /* result in us */
 		printf("******\nscan_window = %d\n",scan_window);
 		fflush(stdout);
 		for (int c = 0; c < NUM_RUN; c++)
@@ -247,18 +253,18 @@ int main(int argc, char *argv[])
 			min_time = (float)t / (float)(1000 * TIME_COEFF);
 		}
 		fflush(stdout);
+
+		//save to file?
+		fprintf(fp,"%d,%d,%d,%d,%lf,%d\n",
+		NUM_BEACONS,scan_window,scan_interval,beacon_tx_interval,(float)t/(float)(TIME_COEFF),c);
+		fflush(fp); //keep file updated
 	} //end of run
 
 	printf("avg results over %d runs: %lf s\n", NUM_RUN, sum_time / (float)NUM_RUN);
-  printf("max time: %1f seconds, min time: %1f seconds\n", max_time, min_time);
+   	printf("max time: %1f seconds, min time: %1f seconds\n", max_time, min_time);
 	fflush(stdout);
 
-	//save to file?
-	fprintf(fp,"%d,%d,%d,%d,%1f,%1f,%1f\n",
-		NUM_BEACONS,scan_window,scan_interval,beacon_tx_interval,
-		sum_time / (float)NUM_RUN, max_time, min_time);
-	fflush(fp); //keep file updated
-} //end outer iteration
+//} //end optional outer iteration
 
 fclose(fp);
 	return 0;
